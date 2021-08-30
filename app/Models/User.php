@@ -64,4 +64,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Task::class);
     }
+
+    public function burndownSnapshots(): HasMany
+    {
+        return $this->hasMany(BurndownSnapshot::class);
+    }
 }

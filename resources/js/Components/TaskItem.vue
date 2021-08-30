@@ -39,51 +39,55 @@ import JetSecondaryButton from '@/Jetstream/SecondaryButton.vue'
 import JetDangerButton from '@/Jetstream/DangerButton.vue'
 import { XIcon } from '@heroicons/vue/solid'
 
- export default {
-   components: {
-     JetInput,
-     XIcon,
-     JetConfirmationModal,
-     JetSecondaryButton,
-     JetDangerButton,
-   },
+export default {
+  components: {
+    JetInput,
+    XIcon,
+    JetConfirmationModal,
+    JetSecondaryButton,
+    JetDangerButton,
+  },
 
-   props: {
-     task: {
-       type: Object,
-       required: true,
-     },
-   },
+  emits: ['new-minute', 'snapshots'],
 
-   data () {
-     return {
-       editing: false,
-       confirmingDelete: false,
-     }
-   },
+  props: {
+    task: {
+      type: Object,
+      required: true,
+    },
+  },
 
-   watch: {
-     'task.is_done' (newValue) {
-       // sync in the background
-       axios.put(`/tasks/${this.task.id}`, { is_done: newValue, name: this.task.name })
-     },
-   },
+  data () {
+    return {
+      editing: false,
+      confirmingDelete: false,
+    }
+  },
 
-   methods: {
-     edit () {
-       this.editing = true
-       this.$nextTick(() => this.$refs.input.focus())
-     },
+  watch: {
+    'task.is_done' (newValue) {
+      // sync in the background
+      axios.put(`/tasks/${this.task.id}`, { is_done: newValue, name: this.task.name })
+        .then(response => this.$emit('snapshots', response.data))
+    },
+  },
 
-     saveName () {
-       // update UI immediately, then sync to the DB in the background
-       this.editing = false
-       axios.put(`/tasks/${this.task.id}`, { name: this.task.name })
-     },
+  methods: {
+    edit () {
+      this.editing = true
+      this.$nextTick(() => this.$refs.input.focus())
+    },
 
-     deleteTask () {
-       this.$emit('delete-task')
-     },
-   },
- }
+    saveName () {
+      // update UI immediately, then sync to the DB in the background
+      this.editing = false
+      axios.put(`/tasks/${this.task.id}`, { name: this.task.name })
+        .then(response => this.$emit('snapshots', response.data))
+    },
+
+    deleteTask () {
+      this.$emit('delete-task')
+    },
+  },
+}
 </script>

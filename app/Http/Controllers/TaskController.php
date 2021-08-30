@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SaveTaskRequest;
+use App\Models\BurndownSnapshot;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
@@ -18,14 +19,27 @@ class TaskController extends Controller
      */
     public function index()
     {
-        $tasks = $this->data();
-        return Inertia::render('Tasks/List', compact('tasks'));
+        $tasks = Auth::user()->tasks;
+        $burndown = $this->snapshots();
+        return Inertia::render('Tasks/List', compact('tasks', 'burndown'));
     }
 
-    public function data()
+    public function snapshots()
     {
-        // provide the user's tasks
-        return Auth::user()->tasks;
+        $user = Auth::user();
+
+        // get recent snapshots
+        $recentSnapshots = $user->burndownSnapshots()
+            ->recent()
+            ->get(['minute', 'num_remaining', 'num_tasks']);
+        
+        // get the closest snapshot beyond 60 minutes
+        $startingSnapshot = BurndownSnapshot::startingSnapshot($user);
+        if ($startingSnapshot) {
+            $recentSnapshots->prepend($startingSnapshot);
+        }
+        
+        return $recentSnapshots;
     }
 
     /**
@@ -46,10 +60,14 @@ class TaskController extends Controller
      */
     public function store(SaveTaskRequest $request)
     {
-        // create a task associated with the logged-in user
-        return Auth::user()
-            ->tasks()
-            ->create($request->validated());
+        return [
+            // create a task associated with the logged-in user
+            'task' => Auth::user()
+                ->tasks()
+                ->create($request->validated()),
+            // update burndown
+            'burndown' => $this->snapshots(),
+        ];
     }
 
     /**
@@ -88,6 +106,9 @@ class TaskController extends Controller
 
         // update
         $task->update($request->validated());
+
+        // return snapshots
+        return $this->snapshots();
     }
 
     /**
@@ -103,5 +124,8 @@ class TaskController extends Controller
 
         // delete
         $task->delete();
+
+        // return snapshots
+        return $this->snapshots();
     }
 }

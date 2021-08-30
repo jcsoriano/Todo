@@ -20,6 +20,6 @@ Route::redirect('/', 'tasks');
 Route::redirect('dashboard', 'tasks');
 
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('burndown', [TaskController::class, 'snapshots']);
     Route::resource('tasks', TaskController::class);
-    Route::get('tasks/data', [TaskController::class, 'data']);
 });
